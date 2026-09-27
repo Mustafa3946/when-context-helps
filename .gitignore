@@ -1,0 +1,14 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.venv/
+venv/
+
+# Generated per-run sweep configs (reproducible from config + scripts/run_hyperparameter_sweep.py)
+config/_generated/
+
+# Data and results (not part of this code repo)
+data/
+results/

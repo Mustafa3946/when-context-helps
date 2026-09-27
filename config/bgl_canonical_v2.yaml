@@ -1,0 +1,96 @@
+# BGL Evaluation Configuration (Canonical v2 Schema - INFOCOM 2026)
+# Local-first, scalable, reproducible
+
+run:
+  name: "bgl_rev5_local"
+  seed: 42
+  output_dir: "results/experiments"
+  top_k: 50
+  local_only: true  # Offline mode - no Azure API calls
+
+data:
+  templates_path: "data/processed/bgl/templates.jsonl"
+  embeddings:
+    manifest_path: "data/processed/bgl/embeddings/manifest.json"
+    shards_dir: "data/processed/bgl/embeddings/shards"
+  occurrence_store:
+    db_path: "data/processed/bgl/occurrences.duckdb"
+    table: "occurrences"
+
+ground_truth:
+  incidents_path: "data/evaluation/bgl_incidents.jsonl"
+  qrels_path: "data/evaluation/bgl_qrels.jsonl"
+  split:
+    method: "time"
+    train_frac: 0.7
+
+retrieval:
+  bm25:
+    index_dir: "data/processed/bgl/bm25_index"
+  faiss:
+    index_path: "data/index/bgl_faiss/index.faiss"
+    meta_path: "data/index/bgl_faiss/meta.json"
+    template_ids_path: "data/index/bgl_faiss/template_ids.npy"
+
+lar_rag:
+  alpha: 1.0
+  beta: 0.3
+  gamma: 0.3
+  time_kernel:
+    kind: "asymmetric_exp"
+    tau_before: 3600
+    tau_after: 7200
+  topo_kernel:
+    kind: "exp"
+    tau: 2.0
+  stage1:
+    mode: "hybrid"
+    candidates: 1000
+
+methods:
+  bm25_baseline:
+    enabled: true
+    
+  dense_baseline:
+    enabled: true
+    
+  hybrid_baseline:
+    enabled: true
+    bm25_weight: 0.3
+    dense_weight: 0.7
+    stage1_k: 1000
+    
+  lar_rag_full:
+    enabled: true
+    use_temporal: true
+    use_topology: true
+    
+  lar_rag_no_time:
+    enabled: true
+    use_temporal: false
+    use_topology: true
+    alpha: 1.3
+    beta: 0.0
+    gamma: 0.3
+    
+  lar_rag_no_topo:
+    enabled: true
+    use_temporal: true
+    use_topology: false
+    alpha: 1.3
+    beta: 0.3
+    gamma: 0.0
+
+evaluation:
+  metrics:
+    - recall@1
+    - recall@5
+    - recall@10
+    - recall@20
+    - mrr@10
+    - ndcg@10
+    - map
+  
+  save_per_query: true
+  save_summary: true
+  save_run_meta: true

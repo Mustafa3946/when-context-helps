@@ -1,0 +1,98 @@
+# BGL Evaluation Configuration
+# INFOCOM-quality LAR-RAG experiments
+
+# Data paths
+data:
+  templates: data/processed/bgl/templates.jsonl
+  template_map: data/processed/bgl/template_map.jsonl
+  embeddings_dir: data/processed/bgl/template_embeddings.jsonl
+  faiss_index: data/index/bgl_faiss
+  ground_truth: data/evaluation/bgl_ground_truth.jsonl
+  topology_graph: null  # Optional: path to topology JSON
+
+# Embedding configuration
+embedding:
+  model: text-embedding-3-small
+  dimension: 1536
+
+# Retrieval methods to evaluate
+methods:
+  - name: "BM25"
+    type: bm25
+    params:
+      k1: 1.2
+      b: 0.75
+  
+  - name: "Dense"
+    type: dense
+    params: {}
+  
+  - name: "Hybrid"
+    type: hybrid
+    params:
+      stage1_k: 200
+      alpha: 0.5
+      beta: 0.5
+  
+  - name: "LAR-RAG (Full)"
+    type: lar_rag
+    params:
+      alpha: 0.4
+      beta: 0.3
+      gamma: 0.3
+      lambda_pre: 0.0001
+      lambda_post: 0.001
+      lambda_g: 0.5
+      use_temporal: true
+      use_topology: true
+      topology_mode: synthetic
+      stage1_k: 200
+  
+  - name: "LAR-RAG (No Time)"
+    type: lar_rag
+    params:
+      alpha: 0.7
+      beta: 0.0
+      gamma: 0.3
+      use_temporal: false
+      use_topology: true
+      topology_mode: synthetic
+      stage1_k: 200
+  
+  - name: "LAR-RAG (No Topology)"
+    type: lar_rag
+    params:
+      alpha: 0.6
+      beta: 0.4
+      gamma: 0.0
+      use_temporal: true
+      use_topology: false
+      stage1_k: 200
+
+# Evaluation metrics
+metrics:
+  hit_rate_k: [1, 3, 5, 10, 20]
+  compute_mrr: true
+  compute_map: true
+  compute_latency: true
+  latency_percentiles: [50, 95, 99]
+
+# Experiment settings
+experiment:
+  top_k: 50  # Number of results to retrieve
+  max_queries: null  # null = all queries, or set to N for testing
+  random_seed: 42
+  
+# Output settings
+output:
+  results_dir: results
+  run_id: null  # Auto-generate if null
+  save_per_query: true
+  save_summary: true
+  save_config_snapshot: true
+
+# Statistical testing
+statistics:
+  bootstrap_iterations: 1000
+  confidence_level: 0.95
+  baseline_method: "BM25"  # Method to compare against

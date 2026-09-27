@@ -1,0 +1,114 @@
+# HDFS Hyperparameter Sensitivity Sweep (EMSE revision, R2)
+# Purpose: show the HDFS gain isn't due to one narrowly-tuned (alpha,beta,gamma,
+# lambda_t,lambda_post,lambda_g) setting. Baselines (BM25/Dense/Hybrid) are NOT
+# re-run here since they don't depend on lar_rag params — reference numbers are
+# already in results/hdfs_full_run/results.json (Dense: nDCG@10=0.503, MAP=0.243).
+#
+# Run via: python scripts/run_hyperparameter_sweep.py --config config/hdfs_sweep.yaml
+# This config is NOT run directly through run_experiments_v2.py — the `sweep:`
+# section below is only understood by run_hyperparameter_sweep.py, which
+# generates one full per-run config (under config/_generated/hdfs_sweep/) and
+# invokes run_experiments_v2 once per run, then aggregates.
+
+run:
+  name: hdfs_sweep
+  seed: 42
+  output_dir: results/hdfs_sweep
+  top_k: 50
+  local_only: true
+
+data:
+  templates_path: data/processed/hdfs/templates.jsonl
+  embeddings:
+    manifest_path: data/processed/hdfs/template_embeddings.jsonl/manifest.json
+    shards_dir: data/processed/hdfs/template_embeddings.jsonl
+  occurrence_store:
+    db_path: data/processed/hdfs/occurrences.duckdb
+    table: occurrences
+
+ground_truth:
+  incidents_path: data/evaluation/hdfs_ground_truth_incidents.jsonl
+  qrels_path: data/evaluation/hdfs_ground_truth_qrels.jsonl
+  max_incidents: 200
+  min_relevant: 3
+  split:
+    method: time
+    train_frac: 0.8
+
+retrieval:
+  bm25:
+    index_dir: data/processed/hdfs/bm25_index
+  faiss:
+    index_path: data/index/hdfs_faiss/index.faiss
+    meta_path: data/index/hdfs_faiss/meta.json
+    template_ids_path: data/index/hdfs_faiss/template_ids.npy
+
+# Paper-default values (also the base every sweep run starts from unless overridden)
+lar_rag:
+  alpha: 1.0
+  beta: 0.3
+  gamma: 0.3
+  time_kernel:
+    kind: asymmetric_exp
+    tau_before: 3600
+    tau_after: 7200
+  topo_kernel:
+    kind: exp
+    tau: 2.0
+  stage1:
+    mode: hybrid
+    candidates: 1000
+
+methods:
+  lar_rag_full:
+    enabled: true
+    use_temporal: true
+    use_topology: true
+
+evaluation:
+  metrics:
+    - recall@1
+    - recall@5
+    - recall@10
+    - recall@20
+    - mrr@10
+    - ndcg@10
+    - map
+  output_dir: results/hdfs_sweep
+  save_per_query: true
+  save_summary: true
+  save_run_meta: true
+
+# Grid consumed only by scripts/run_hyperparameter_sweep.py.
+# 16 weight-ratio runs (mirrors config/bgl_sweep.yaml's beta x gamma grid) +
+# 1 exact paper-default anchor + 6 one-at-a-time kernel (tau) sensitivity runs = 23 total.
+sweep:
+  runs:
+    # --- Weight ratio grid: beta x gamma, alpha fixed at 1.0 pre-normalization ---
+    - {name: b00_g00,  beta: 0.0,  gamma: 0.0}
+    - {name: b00_g025, beta: 0.0,  gamma: 0.25}
+    - {name: b00_g05,  beta: 0.0,  gamma: 0.5}
+    - {name: b00_g1,   beta: 0.0,  gamma: 1.0}
+    - {name: b025_g00, beta: 0.25, gamma: 0.0}
+    - {name: b025_g025,beta: 0.25, gamma: 0.25}
+    - {name: b025_g05, beta: 0.25, gamma: 0.5}
+    - {name: b025_g1,  beta: 0.25, gamma: 1.0}
+    - {name: b05_g00,  beta: 0.5,  gamma: 0.0}
+    - {name: b05_g025, beta: 0.5,  gamma: 0.25}
+    - {name: b05_g05,  beta: 0.5,  gamma: 0.5}
+    - {name: b05_g1,   beta: 0.5,  gamma: 1.0}
+    - {name: b1_g00,   beta: 1.0,  gamma: 0.0}
+    - {name: b1_g025,  beta: 1.0,  gamma: 0.25}
+    - {name: b1_g05,   beta: 1.0,  gamma: 0.5}
+    - {name: b1_g1,    beta: 1.0,  gamma: 1.0}
+
+    # --- Exact paper-default anchor (alpha=1.0, beta=0.3, gamma=0.3, default taus) ---
+    - {name: paper_default, beta: 0.3, gamma: 0.3}
+
+    # --- Kernel (lambda) one-at-a-time sensitivity, weights held at paper default ---
+    - {name: tau_before_half,   beta: 0.3, gamma: 0.3, tau_before: 1800}
+    - {name: tau_before_double, beta: 0.3, gamma: 0.3, tau_before: 7200}
+    - {name: tau_after_half,    beta: 0.3, gamma: 0.3, tau_after: 3600}
+    - {name: tau_after_double,  beta: 0.3, gamma: 0.3, tau_after: 14400}
+    - {name: tau_topo_half,     beta: 0.3, gamma: 0.3, tau_topo: 1.0}
+    - {name: tau_topo_double,   beta: 0.3, gamma: 0.3, tau_topo: 4.0}

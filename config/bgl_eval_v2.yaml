@@ -1,0 +1,94 @@
+# BGL Evaluation Configuration (INFOCOM-Compliant)
+# Local-first retrievers only, v2 Parquet embeddings
+
+data:
+  templates: data/processed/bgl/templates.jsonl
+  template_map: data/processed/bgl/template_map.jsonl
+  occurrence_store: data/processed/bgl/occurrences.duckdb
+  faiss_index: data/index/bgl_faiss
+  ground_truth: data/evaluation/bgl_ground_truth.jsonl
+
+methods:
+  bm25_baseline:
+    type: bm25
+    templates_file: data/processed/bgl/templates.jsonl
+    template_map_file: data/processed/bgl/template_map.jsonl
+  
+  dense_baseline:
+    type: dense
+    templates_file: data/processed/bgl/templates.jsonl
+    index_dir: data/index/bgl_faiss
+    embedding_model: text-embedding-3-small
+    insecure_ssl: false
+  
+  hybrid_baseline:
+    type: hybrid
+    templates_file: data/processed/bgl/templates.jsonl
+    index_dir: data/index/bgl_faiss
+    template_map_file: data/processed/bgl/template_map.jsonl
+    embedding_model: text-embedding-3-small
+    stage1_k: 200
+    bm25_weight: 0.3
+    dense_weight: 0.7
+  
+  lar_rag_full:
+    type: lar_rag
+    templates_file: data/processed/bgl/templates.jsonl
+    index_dir: data/index/bgl_faiss
+    occurrence_store_path: data/processed/bgl/occurrences.duckdb
+    embedding_model: text-embedding-3-small
+    alpha: 0.4  # Semantic weight
+    beta: 0.3   # Temporal weight
+    gamma: 0.3  # Topology weight
+    lambda_pre: 0.0001
+    lambda_post: 0.001
+    lambda_g: 0.5
+    use_temporal: true
+    use_topology: true
+    topology_mode: synthetic
+    stage1_k: 200
+    normalize_scores: true
+  
+  lar_rag_no_time:
+    type: lar_rag
+    templates_file: data/processed/bgl/templates.jsonl
+    index_dir: data/index/bgl_faiss
+    occurrence_store_path: data/processed/bgl/occurrences.duckdb
+    embedding_model: text-embedding-3-small
+    alpha: 0.7  # Increased semantic weight
+    beta: 0.0   # No temporal
+    gamma: 0.3  # Topology weight
+    use_temporal: false
+    use_topology: true
+    topology_mode: synthetic
+    stage1_k: 200
+    normalize_scores: true
+  
+  lar_rag_no_topo:
+    type: lar_rag
+    templates_file: data/processed/bgl/templates.jsonl
+    index_dir: data/index/bgl_faiss
+    occurrence_store_path: data/processed/bgl/occurrences.duckdb
+    embedding_model: text-embedding-3-small
+    alpha: 0.7  # Increased semantic weight
+    beta: 0.3   # Temporal weight
+    gamma: 0.0  # No topology
+    use_temporal: true
+    use_topology: false
+    stage1_k: 200
+    normalize_scores: true
+
+evaluation:
+  metrics:
+    - hit_rate@1
+    - hit_rate@5
+    - hit_rate@10
+    - mrr
+    - map
+  
+  max_queries: null  # null = all queries
+  
+  output_dir: results/bgl_eval_v2
+  
+  save_per_query: true
+  save_summary: true

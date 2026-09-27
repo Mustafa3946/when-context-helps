@@ -1,0 +1,181 @@
+# BGL Parameter Sweep Configuration (INFOCOM 2026)
+# Canonical v2 schema for paper_run_local.py with sweep support
+
+run:
+  name: bgl_sweep
+  seed: 42
+  output_dir: results/bgl_sweep
+  top_k: 50
+  local_only: true
+
+data:
+  templates_path: data/processed/bgl/templates.jsonl
+  embeddings:
+    manifest_path: data/processed/bgl/template_embeddings.jsonl/manifest.json
+    shards_dir: data/processed/bgl/template_embeddings.jsonl
+  occurrence_store:
+    db_path: data/processed/bgl/occurrences.duckdb
+    table: occurrences
+
+ground_truth:
+  incidents_path: data/evaluation/bgl_incidents.jsonl
+  qrels_path: data/evaluation/bgl_qrels.jsonl
+  max_incidents: 200
+  min_relevant: 3
+  split:
+    method: time
+    train_frac: 0.8
+
+retrieval:
+  bm25:
+    index_dir: data/processed/bgl/bm25_index
+  faiss:
+    index_path: data/index/bgl_faiss/index.faiss
+    meta_path: data/index/bgl_faiss/meta.json
+    template_ids_path: data/index/bgl_faiss/template_ids.npy
+
+lar_rag:
+  alpha: 1.0
+  beta: 0.0
+  gamma: 0.0
+  time_kernel:
+    kind: asymmetric_exp
+    tau_before: 3600
+    tau_after: 7200
+  topo_kernel:
+    kind: exp
+    tau: 2.0
+  stage1:
+    mode: hybrid
+    candidates: 1000
+
+methods:
+  bm25_baseline:
+    enabled: true
+    
+  dense_baseline:
+    enabled: true
+    
+  hybrid_baseline:
+    enabled: true
+    bm25_weight: 0.3
+    dense_weight: 0.7
+    stage1_k: 1000
+
+evaluation:
+  metrics:
+    - recall@1
+    - recall@5
+    - recall@10
+    - recall@20
+    - mrr@10
+    - ndcg@10
+    - map
+  
+  output_dir: results/bgl_sweep
+  save_per_query: true
+  save_summary: true
+  save_run_meta: true
+
+sweep:
+  template:
+    alpha: 1.0
+    use_temporal: true
+    use_topology: true
+  
+  runs:
+    - name: b0_g0
+      beta: 0.0
+      gamma: 0.0
+      use_temporal: false
+      use_topology: false
+    
+    - name: b0_g025
+      beta: 0.0
+      gamma: 0.25
+      use_temporal: false
+      use_topology: true
+    
+    - name: b0_g05
+      beta: 0.0
+      gamma: 0.5
+      use_temporal: false
+      use_topology: true
+    
+    - name: b0_g1
+      beta: 0.0
+      gamma: 1.0
+      use_temporal: false
+      use_topology: true
+    
+    - name: b025_g0
+      beta: 0.25
+      gamma: 0.0
+      use_temporal: true
+      use_topology: false
+    
+    - name: b025_g025
+      beta: 0.25
+      gamma: 0.25
+      use_temporal: true
+      use_topology: true
+    
+    - name: b025_g05
+      beta: 0.25
+      gamma: 0.5
+      use_temporal: true
+      use_topology: true
+    
+    - name: b025_g1
+      beta: 0.25
+      gamma: 1.0
+      use_temporal: true
+      use_topology: true
+    
+    - name: b05_g0
+      beta: 0.5
+      gamma: 0.0
+      use_temporal: true
+      use_topology: false
+    
+    - name: b05_g025
+      beta: 0.5
+      gamma: 0.25
+      use_temporal: true
+      use_topology: true
+    
+    - name: b05_g05
+      beta: 0.5
+      gamma: 0.5
+      use_temporal: true
+      use_topology: true
+    
+    - name: b05_g1
+      beta: 0.5
+      gamma: 1.0
+      use_temporal: true
+      use_topology: true
+    
+    - name: b1_g0
+      beta: 1.0
+      gamma: 0.0
+      use_temporal: true
+      use_topology: false
+    
+    - name: b1_g025
+      beta: 1.0
+      gamma: 0.25
+      use_temporal: true
+      use_topology: true
+    
+    - name: b1_g05
+      beta: 1.0
+      gamma: 0.5
+      use_temporal: true
+      use_topology: true
+    
+    - name: b1_g1
+      beta: 1.0
+      gamma: 1.0
+      use_temporal: true
+      use_topology: true

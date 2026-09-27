@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+message: "Please cite this repository using the metadata below, or the associated paper once published."
+type: software
+title: "When Context Helps: code for an empirical study of temporal and topological context in system log retrieval"
+authors:
+  - family-names: Mustafa
+    given-names: Mohammad Abdur Rahim
+  - family-names: Mamun
+    given-names: Quazi
+    affiliation: Charles Sturt University
+repository-code: "https://github.com/Mustafa3946/when-context-helps"
+license: MIT

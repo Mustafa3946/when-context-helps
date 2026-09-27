@@ -1,0 +1,83 @@
+# BGL Smoke Run Configuration - INFOCOM 2026
+# Small test run to verify end-to-end pipeline before full experiments
+
+run:
+  name: "bgl_smoke_run"
+  seed: 42
+  output_dir: "results/smoke_run"
+  top_k: 10  # Small for smoke test
+  local_only: true  # Offline mode - no Azure API calls
+  max_test_incidents: 10  # SMOKE RUN: 10 incidents only
+
+data:
+  templates_path: "data/processed/bgl/templates.jsonl"
+  embeddings:
+    manifest_path: "data/processed/bgl/template_embeddings.jsonl/manifest.json"
+    shards_dir: "data/processed/bgl/template_embeddings.jsonl"
+    max_cached_shards: 16  # Bounded memory
+  occurrence_store:
+    db_path: "data/processed/bgl/occurrences.duckdb"
+    table: "occurrences"
+
+ground_truth:
+  incidents_path: "data/evaluation/bgl_smoke_incidents.jsonl"
+  qrels_path: "data/evaluation/bgl_smoke_qrels.jsonl"
+  max_incidents: 20
+  min_relevant: 1
+  split:
+    method: "time"
+    train_frac: 0.8  # No split for smoke run - use all as test
+
+retrieval:
+  bm25:
+    index_dir: "data/processed/bgl/bm25_index"
+  faiss:
+    index_path: "data/index/bgl_faiss/index.faiss"
+    meta_path: "data/index/bgl_faiss/meta.json"
+    template_ids_path: "data/index/bgl_faiss/template_ids.npy"
+
+lar_rag:
+  alpha: 1.0
+  beta: 0.3
+  gamma: 0.3
+  time_kernel:
+    kind: "asymmetric_exp"
+    tau_before: 3600
+    tau_after: 7200
+  topo_kernel:
+    kind: "exp"
+    tau: 2.0
+  stage1:
+    mode: "hybrid"
+    candidates: 100  # Smaller for smoke run
+
+methods:
+  bm25_baseline:
+    enabled: true
+    
+  dense_baseline:
+    enabled: true
+    
+  hybrid_baseline:
+    enabled: true
+    bm25_weight: 0.3
+    dense_weight: 0.7
+    stage1_k: 100  # Smaller for smoke run
+    
+  lar_rag_full:
+    enabled: true
+    use_temporal: true
+    use_topology: true
+
+evaluation:
+  metrics:
+    - recall@1
+    - recall@5
+    - recall@10
+    - mrr@10
+    - ndcg@10
+    - map
+  
+  save_per_query: true
+  save_summary: true
+  save_run_meta: true

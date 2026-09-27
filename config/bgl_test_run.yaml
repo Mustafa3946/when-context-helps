@@ -1,0 +1,43 @@
+# BGL Test Run Configuration - Small dataset for testing pipeline
+# 
+# Tests pipeline with limited data before full 700MB run
+
+# Input: Raw BGL log file (not committed to Git)
+raw_bgl_file: data/raw/BGL/BGL.log
+
+# Output: Processed data files
+parsed_output: data/processed/bgl/parsed_test.jsonl
+templates_output: data/processed/bgl/templates_test.jsonl
+template_map_output: data/processed/bgl/template_map_test.jsonl
+template_embeddings_output: data/processed/bgl/template_embeddings_test.jsonl
+
+# Parsing configuration
+parse_mode: full  # 'sample' or 'full'
+progress_every: 5000  # Print progress every N lines in full mode
+max_lines: 20000  # Test with 20K lines first
+
+# Template extraction
+node_field: node_id  # Field name for node identifier
+
+# Embedding configuration
+embedding:
+  model: text-embedding-3-small
+  batch_size: 128  # Templates per API batch
+  resume: true  # Skip already embedded templates
+  insecure_ssl: true  # Set to true only if corporate proxy requires it
+  max_retries: 6  # Exponential backoff retries for rate limits
+  price_per_1m_tokens: 0.02  # text-embedding-3-small pricing
+
+# Sanity checks (relaxed for test)
+sanity_checks:
+  min_parsed_records: 10000  # Warn if fewer than 10K records (test mode)
+  min_parsed_size_mb: 1  # Warn if output < 1 MB (test mode)
+  min_templates: 1000  # Warn if fewer than 1K unique templates (test mode)
+  test_queries:
+    - "kernel panic memory error critical failure"
+    - "timeout communication network connection lost"
+    - "data cache parity error instruction exception"
+  top_k_retrieval: 5  # Number of templates to retrieve per test query
+
+# Output statistics
+stats_output: results/bgl_test_run_stats.json
